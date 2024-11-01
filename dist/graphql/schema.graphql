@@ -1,0 +1,20 @@
+type Menu {
+    courses: [Course!]!
+    backgroundImage: Int!
+}
+
+type Course {
+    name: String!
+    description: String!
+}
+
+input RecipeInput {
+    name: String!
+    ingredients: String!
+    directions: String!
+}
+
+type Query {
+    menus: [Menu]
+    generateMenu(recipes: [RecipeInput!]!): Menu!
+}
