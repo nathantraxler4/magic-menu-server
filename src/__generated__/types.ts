@@ -32,11 +32,19 @@ export type Query = {
   __typename?: 'Query';
   generateMenu: Menu;
   menus?: Maybe<Array<Maybe<Menu>>>;
+  recipes: Array<Recipe>;
 };
 
 
 export type QueryGenerateMenuArgs = {
   recipes: Array<RecipeInput>;
+};
+
+export type Recipe = {
+  __typename?: 'Recipe';
+  directions: Scalars['String']['output'];
+  ingredients: Scalars['String']['output'];
+  name: Scalars['String']['output'];
 };
 
 export type RecipeInput = {
@@ -121,6 +129,7 @@ export type ResolversTypes = {
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   Menu: ResolverTypeWrapper<Menu>;
   Query: ResolverTypeWrapper<{}>;
+  Recipe: ResolverTypeWrapper<Recipe>;
   RecipeInput: RecipeInput;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
 };
@@ -132,6 +141,7 @@ export type ResolversParentTypes = {
   Int: Scalars['Int']['output'];
   Menu: Menu;
   Query: {};
+  Recipe: Recipe;
   RecipeInput: RecipeInput;
   String: Scalars['String']['output'];
 };
@@ -151,11 +161,20 @@ export type MenuResolvers<ContextType = any, ParentType extends ResolversParentT
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   generateMenu?: Resolver<ResolversTypes['Menu'], ParentType, ContextType, RequireFields<QueryGenerateMenuArgs, 'recipes'>>;
   menus?: Resolver<Maybe<Array<Maybe<ResolversTypes['Menu']>>>, ParentType, ContextType>;
+  recipes?: Resolver<Array<ResolversTypes['Recipe']>, ParentType, ContextType>;
+};
+
+export type RecipeResolvers<ContextType = any, ParentType extends ResolversParentTypes['Recipe'] = ResolversParentTypes['Recipe']> = {
+  directions?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  ingredients?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type Resolvers<ContextType = any> = {
   Course?: CourseResolvers<ContextType>;
   Menu?: MenuResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
+  Recipe?: RecipeResolvers<ContextType>;
 };
 
