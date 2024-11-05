@@ -31,12 +31,11 @@ export async function getMenus() {
 
 
 /**
- * 
- * @param recipes a list of recipes to be used in generating the menu
- * @returns the generated menu
+ * Service method used to generate a Menu.
+ * @param recipes
+ * @returns A generated menu
  */
 export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
-    const openai = new OpenAI();
     const completionPromises = []
     for (const recipe of recipes) {
         const completion = openai.chat.completions.create({
@@ -44,10 +43,12 @@ export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
             messages: [
                 { 
                     role: "system", 
-                    content: `
+                    content: 
+                    `
                         You are a master chef preparing a meal for your friends. 
                         Pick out the 5 most important ingredients of a recipe presented to you and 
-                        respond to me using a comma separated list
+                        respond to me using a comma separated list. Please order the ingredients by
+                        their importance to the dish starting with most important.
                     ` 
                 },
                 {
@@ -58,7 +59,14 @@ export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
         });
         completionPromises.push(completion)
     }
-    const completions = await Promise.all(completionPromises)
+
+    let completions
+    try {
+        completions = await Promise.all(completionPromises)
+    } catch (error) {
+        console.log('An error occurred generating completions.')
+        throw error
+    }
 
     const courses = []
     for (let i = 0; i < completions.length; i++) {
