@@ -69,6 +69,9 @@ export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
             console.error('There was an error parsing the completion')
             throw error
         }
+    } else {
+        console.error('Completion does not have any content.')
+        throw new Error('Completion does not have any content')
     }
 
     const courses = completionContentArray.map((content: string, i: number) => {
