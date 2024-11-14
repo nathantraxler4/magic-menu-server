@@ -66,7 +66,7 @@ export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
             const completionContentArrayString = completionContent.substring(jsonStartIndex, jsonEndIndex)
             completionContentArray = JSON.parse(completionContentArrayString)
         } catch (error) {
-            console.log('There was an error parsing the completion')
+            console.error('There was an error parsing the completion')
             throw error
         }
     }

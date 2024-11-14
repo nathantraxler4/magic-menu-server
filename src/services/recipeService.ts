@@ -6,13 +6,19 @@ export async function getRecipes(): Promise<Recipe[]> {
     try {
         recipes = await RecipeModel.find({})
     } catch (error) {
-        console.log('An error occured fetching recipes.')
+        console.error(error)
         throw error
     }
     return recipes
 }
 
 export async function addRecipes(recipes: RecipeInput[]): Promise<Recipe[]> {
-    await RecipeModel.insertMany(recipes)
-    return recipes
+    let insertedRecipes
+    try {
+        insertedRecipes = await RecipeModel.insertMany(recipes)
+    } catch (error) {
+        console.error(error) 
+        throw error
+    }
+    return insertedRecipes
 }
