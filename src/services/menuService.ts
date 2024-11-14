@@ -36,45 +36,47 @@ export async function getMenus() {
  * @returns A generated menu
  */
 export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
-    const completionPromises = []
-    for (const recipe of recipes) {
-        const completion = openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-                { 
-                    role: "system", 
-                    content: 
-                    `
-                        You are a master chef preparing a meal for your friends. 
-                        Pick out the 5 most important ingredients of a recipe presented to you and 
-                        respond to me using a comma separated list. Please order the ingredients by
-                        their importance to the dish starting with most important.
-                    ` 
-                },
-                {
-                    role: "user",
-                    content: JSON.stringify(recipe),
-                },
-            ],
-        });
-        completionPromises.push(completion)
+
+    const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+            { 
+                role: "system", 
+                content: 
+                `
+                    You are a master chef preparing a meal for your friends. 
+                    Pick out the 5 most important ingredients of each recipe presented to you formatted as a comma separated string. 
+                    Please order the ingredients by their importance to the dish starting with most important. 
+                    Please use a JSON Array to hold a list of the generated strings.  
+                ` 
+            },
+            {
+                role: "user",
+                content: JSON.stringify(recipes),
+            },
+        ],
+    });
+
+    let completionContentArray
+    if (completion?.choices[0]?.message?.content) {
+        try {
+            const completionContent = completion?.choices[0]?.message?.content
+            const jsonStartIndex = completionContent.indexOf('[')
+            const jsonEndIndex = completionContent.indexOf(']') + 1
+            const completionContentArrayString = completionContent.substring(jsonStartIndex, jsonEndIndex)
+            completionContentArray = JSON.parse(completionContentArrayString)
+        } catch (error) {
+            console.log('There was an error parsing the completion')
+            throw error
+        }
     }
 
-    let completions
-    try {
-        completions = await Promise.all(completionPromises)
-    } catch (error) {
-        console.log('An error occurred generating completions.')
-        throw error
-    }
-
-    const courses = []
-    for (let i = 0; i < completions.length; i++) {
-        courses.push({
+    const courses = completionContentArray.map((content: string, i: number) => {
+        return {
             name: recipes[i].name,
-            description: completions[i].choices[0].message.content ?? ''
-        })
-    }
+            description: content
+        }
+    })
 
     const menu = {
         courses: courses,

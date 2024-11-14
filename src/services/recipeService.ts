@@ -2,23 +2,13 @@ import { Recipe, RecipeInput } from "../__generated__/types";
 import RecipeModel from "../models/recipe.js";
 
 export async function getRecipes(): Promise<Recipe[]> {
-    const recipes = [
-        {
-            "name": "Chicken Feijoada",
-            "ingredients": "1 lb black beans from a bag, rinsed and picked through, about 2 3/4 cups\n2 1/2 to 3 quarts cold water, enough to cover the beans by 2 inches\n2 chickens, 3 1/2 to 4 lbs each with skin, cut up into 6 pieces each\nKosher salt\nfreshly ground black pepper\n4 Tbsp canola oil\n1/2 cup white wine\n1 onion, chopped\n2 stalks celery, finely chopped\n4 scallions (green and white parts), finely chopped\n2/3 cup finely chopped green bell pepper\n5 cloves garlic, minced\n3 bay leaves\nFreshly ground nutmeg to taste\nCayenne pepper to taste\n2 Tbsp fresh chopped parsley",
-            "directions": "1. Place the beans in a very large pot, and cover them with the cold water. Cover the pan and bring the water to a boil over high heat. Bring the heat down to medium-high and cook the beans, covered, until they are just cooked but not too mushy, 1 to 1 1/2 hours. At this point the liquid will still look thin and clear. Keep the beans in the liquid and set them aside. This step can be completed up to two days ahead of time; just keep the beans and the liquid in an airtight plastic container in the refrigerator.\n2. While the beans are cooking, prepare the chicken. Pat the chicken pieces dry with paper towels and season with salt and pepper on both sides.\n3. Pour 2 Tbsp of the canola oil in a large saute pan and cook the chicken, in batches, over medium heat until it is golden brown, about 4 minutes per side. Transfer to a bowl and cover with aluminum foil, making sure steam cannot escape.\n4. Use the white wine to deglaze the pan by scraping the pan with a wooden spoon, making sure all the brown bits and juice gets transferred to the liquid. Boil until the liquid is well infused with flavor, then strain it into a bowl. Set aside.\n5. Pour the remaining 2 Tbsp of canola oil into a large Dutch oven and cook the onion, celery, scallions, and bell pepper over medium heat, stirring, until soft, about 3 minutes. Add the garlic and cook another minute. Add the chicken and all the juice that might have accumulated in the bowl. Add the reserved beans and all their liquid, and the strained deglazing liquid. The chicken should be covered almost entirely with the beans, vegetables, and liquid.\n6. Add the bay leaves and simmer on very low heat with the pan uncovered so that the liquid has a chance to reduce and thicken. Cook until the chicken meat is tender and sliding off the bone, 1 to 1 1/2 hours.\n7. Before finishing, slightly tilt the pan and scoop out any chicken fat. The black bean sauce should be glossy and earthy. Season with salt, pepper, nutmeg, and cayenne. Top with the fresh parsley.\n8. To serve, place a piece of chicken in a bowl over the starch of your choice, and top with a ladle of the bean sauce."
-        },
-        {
-            "name": "Teriyaki Baked Ramen Noodles and Chicken",
-            "ingredients": "3/4 cup coconut aminos\n1/4 cup orange juice\n1 tbsp coconut sugar\n1 tbsp rice vinegar\n1 thumb ginger, minced\n1 clove garlic, minced\nSalt and pepper\n1 tablespoon arrowroot starch\n3 bricks gluten-free ramen\n1 cup frozen mixed vegetables\n1 lb chicken breast, cubed\nSalt and pepper",
-            "directions": "1. Preheat the oven to 375 F and grease an 8×8″ baking dish.\n2. To make the teriyaki sauce, combine the ingredients in a small pot and whisk well. Heat over medium-low heat for 4-5 minutes or until thick. If a thicker sauce is desired, combine about 1-2 tsp of arrowroot starch with chicken broth and add it to the sauce to thicken further. If a thinner sauce is desired, add a splash of chicken broth to thin out the sauce. Set aside.\n3. Soak the ramen in hot water for about 15 minutes or until soft. Separate with tongs and strain.\n4. Add the ramen to the baking dish along with the veggies, chicken breast, salt, pepper, and teriyaki sauce (reserving about 3-4 tbsp of the sauce on the side). Toss to coat.\n5. Bake in the oven for about 35 minutes, tossing halfway through. Chicken should reach 165°F.\n6. Serve topped with the reserved teriyaki sauce and green onion."
-        },
-        {
-            "name": "White Chicken Chili",
-            "ingredients": "1 small yellow onion, diced\n1 tbsp olive oil\n2 cloves garlic, finely minced\n2 (14.5 oz) cans low-sodium chicken broth\n1 (7 oz) can diced green chilies\n1 1/2 tsp cumin\n1/2 tsp paprika\n1/2 tsp dried oregano\n1/2 tsp ground coriander\n1/4 tsp cayenne pepper\nSalt and freshly ground black pepper to taste\n1 (8 oz) pkg Neufchatel cheese (light cream cheese), cut into small cubes\n1 1/4 cup frozen or fresh corn\n2 (15 oz) cans cannellini beans\n2 1/2 cups shredded cooked rotisserie or leftover chicken\n1 Tbsp fresh lime juice\n2 Tbsp chopped fresh cilantro (plus more for serving)\nTortilla chips, Monterey jack cheese, sliced avocado (for serving, optional)",
-            "directions": "1. Heat olive oil in a large pot over medium-high heat. Add onion and sauté for 4 minutes. Add garlic and sauté for 30 seconds longer.\n2. Add chicken broth, green chilies, cumin, paprika, oregano, coriander, cayenne pepper, and season with salt and pepper to taste. Bring mixture to a boil, then reduce heat to medium-low and simmer for 15 minutes.\n3. Drain and rinse beans. Measure out 1 cup of beans, and transfer to a food processor along with 1/4 cup broth from the soup. Puree until nearly smooth.\n4. Add Neufchatel cheese to the soup along with corn, whole beans, and pureed beans. Stir well and simmer for 5-10 minutes longer.\n5. Stir in chicken, fresh lime juice, and cilantro. Serve with Monterey jack cheese, more cilantro, avocado slices, and tortilla chips, if desired."
-        }
-    ]
+    let recipes
+    try {
+        recipes = await RecipeModel.find({})
+    } catch (error) {
+        console.log('An error occured fetching recipes.')
+        throw error
+    }
     return recipes
 }
 
