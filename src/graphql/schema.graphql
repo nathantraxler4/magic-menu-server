@@ -25,3 +25,7 @@ type Query {
     menus: [Menu]
     generateMenu(recipes: [RecipeInput!]!): Menu!
 }
+
+type Mutation {
+    addRecipes(recipes: [RecipeInput!]!): [Recipe!]!
+}

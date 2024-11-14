@@ -16,7 +16,9 @@
   "description": "",
   "dependencies": {
     "@apollo/server": "^4.11.0",
+    "@typegoose/typegoose": "^12.9.0",
     "graphql": "^16.9.0",
+    "mongoose": "^8.8.1",
     "openai": "^4.70.2"
   },
   "devDependencies": {

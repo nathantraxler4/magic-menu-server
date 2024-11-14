@@ -28,6 +28,16 @@ export type Menu = {
   courses: Array<Course>;
 };
 
+export type Mutation = {
+  __typename?: 'Mutation';
+  addRecipes: Array<Recipe>;
+};
+
+
+export type MutationAddRecipesArgs = {
+  recipes: Array<RecipeInput>;
+};
+
 export type Query = {
   __typename?: 'Query';
   generateMenu: Menu;
@@ -128,6 +138,7 @@ export type ResolversTypes = {
   Course: ResolverTypeWrapper<Course>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   Menu: ResolverTypeWrapper<Menu>;
+  Mutation: ResolverTypeWrapper<{}>;
   Query: ResolverTypeWrapper<{}>;
   Recipe: ResolverTypeWrapper<Recipe>;
   RecipeInput: RecipeInput;
@@ -140,6 +151,7 @@ export type ResolversParentTypes = {
   Course: Course;
   Int: Scalars['Int']['output'];
   Menu: Menu;
+  Mutation: {};
   Query: {};
   Recipe: Recipe;
   RecipeInput: RecipeInput;
@@ -158,6 +170,10 @@ export type MenuResolvers<ContextType = any, ParentType extends ResolversParentT
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
+  addRecipes?: Resolver<Array<ResolversTypes['Recipe']>, ParentType, ContextType, RequireFields<MutationAddRecipesArgs, 'recipes'>>;
+};
+
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   generateMenu?: Resolver<ResolversTypes['Menu'], ParentType, ContextType, RequireFields<QueryGenerateMenuArgs, 'recipes'>>;
   menus?: Resolver<Maybe<Array<Maybe<ResolversTypes['Menu']>>>, ParentType, ContextType>;
@@ -174,6 +190,7 @@ export type RecipeResolvers<ContextType = any, ParentType extends ResolversParen
 export type Resolvers<ContextType = any> = {
   Course?: CourseResolvers<ContextType>;
   Menu?: MenuResolvers<ContextType>;
+  Mutation?: MutationResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   Recipe?: RecipeResolvers<ContextType>;
 };

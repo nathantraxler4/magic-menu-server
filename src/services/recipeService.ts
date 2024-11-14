@@ -1,4 +1,5 @@
-import { Recipe } from "../__generated__/types";
+import { Recipe, RecipeInput } from "../__generated__/types";
+import RecipeModel from "../models/recipe.js";
 
 export async function getRecipes(): Promise<Recipe[]> {
     const recipes = [
@@ -18,5 +19,10 @@ export async function getRecipes(): Promise<Recipe[]> {
             "directions": "1. Heat olive oil in a large pot over medium-high heat. Add onion and sauté for 4 minutes. Add garlic and sauté for 30 seconds longer.\n2. Add chicken broth, green chilies, cumin, paprika, oregano, coriander, cayenne pepper, and season with salt and pepper to taste. Bring mixture to a boil, then reduce heat to medium-low and simmer for 15 minutes.\n3. Drain and rinse beans. Measure out 1 cup of beans, and transfer to a food processor along with 1/4 cup broth from the soup. Puree until nearly smooth.\n4. Add Neufchatel cheese to the soup along with corn, whole beans, and pureed beans. Stir well and simmer for 5-10 minutes longer.\n5. Stir in chicken, fresh lime juice, and cilantro. Serve with Monterey jack cheese, more cilantro, avocado slices, and tortilla chips, if desired."
         }
     ]
+    return recipes
+}
+
+export async function addRecipes(recipes: RecipeInput[]): Promise<Recipe[]> {
+    await RecipeModel.insertMany(recipes)
     return recipes
 }

@@ -4,9 +4,14 @@ import { Resolvers } from '../__generated__/types.js';
 
 const resolvers: Resolvers = {
     Query: {
-      recipes: () => recipeService.getRecipes(),
-      menus: () => menuService.getMenus(),
-      generateMenu: (_parent, args, _contextValue, _info) => menuService.generateMenu(args.recipes)
+      recipes: async () => await recipeService.getRecipes(),
+      menus: async () => await menuService.getMenus(),
+      generateMenu: async (_parent, args, _contextValue, _info) => {
+        return await menuService.generateMenu(args.recipes)
+      }
+    },
+    Mutation: {
+      addRecipes: async (_parent, args, _contextValue, _info) => await recipeService.addRecipes(args.recipes)
     }
 };
 
