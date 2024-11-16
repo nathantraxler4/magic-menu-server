@@ -1,5 +1,6 @@
-import { readFileSync } from 'fs';
+import './setup/config.js'
 
+import { readFileSync } from 'fs';
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import resolvers from './graphql/resolvers.js';
@@ -16,6 +17,7 @@ interface MyContext {
 const server = new ApolloServer<MyContext>({
     typeDefs,
     resolvers,
+    status400ForVariableCoercionErrors: true // Fixes bug introduced in Apollo Server 4
 });
 
 mongoose.connect('mongodb://127.0.0.1:27017/test');

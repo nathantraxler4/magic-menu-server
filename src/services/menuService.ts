@@ -1,6 +1,6 @@
 import { Menu, RecipeInput } from "../__generated__/types";
 import OpenAI from "openai";
-const openai = new OpenAI();
+import openai from "../setup/openai.js";
 
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -57,24 +57,11 @@ export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
         ],
     });
 
-    let completionContentArray
-    if (completion?.choices[0]?.message?.content) {
-        try {
-            const completionContent = completion?.choices[0]?.message?.content
-            const jsonStartIndex = completionContent.indexOf('[')
-            const jsonEndIndex = completionContent.indexOf(']') + 1
-            const completionContentArrayString = completionContent.substring(jsonStartIndex, jsonEndIndex)
-            completionContentArray = JSON.parse(completionContentArrayString)
-        } catch (error) {
-            console.error('There was an error parsing the completion')
-            throw error
-        }
-    } else {
-        console.error('Completion does not have any content.')
-        throw new Error('Completion does not have any content')
-    }
+    const descriptions = _extractJsonArrayFromCompletion(completion);
 
-    const courses = completionContentArray.map((content: string, i: number) => {
+    console.log('Parsed content array:', descriptions);
+
+    const courses = descriptions.map((content: string, i: number) => {
         return {
             name: recipes[i].name,
             description: content
@@ -90,6 +77,30 @@ export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
 }
 
 
-function _generateDescription(recipe: RecipeInput) {
+function _extractJsonArrayFromCompletion(completion: OpenAI.Chat.Completions.ChatCompletion & {
+    _request_id?: string | null;
+}) {
+    if (!completion?.choices?.[0]?.message?.content) {
+        console.error('Completion does not have valid content.');
+        throw new LLMResponseFormatError('Invalid completion object: missing content.');
+    }
 
+    const content = completion.choices[0].message.content;
+
+    try {
+        const jsonStartIndex = content.indexOf('[');
+        const jsonEndIndex = content.indexOf(']');
+
+        if (jsonStartIndex === -1 || jsonEndIndex === -1) {
+            console.error('No JSON array found in the content.');
+            throw new LLMResponseFormatError('Content does not contain a JSON array.');
+        }
+
+        const jsonArrayString = content.substring(jsonStartIndex, jsonEndIndex + 1);
+
+        return JSON.parse(jsonArrayString);
+    } catch (error) {
+        console.error('Failed to parse JSON from completion content:', error);
+        throw new LLMResponseFormatError(`Error parsing JSON array from LLM: ${error}`);
+    }
 }
