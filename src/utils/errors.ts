@@ -1,13 +1,5 @@
-class ValidationError extends Error {
-    constructor(message: string) {
-        super(message)
-        this.name = 'ValidationError'
-    }
-}
-
-class LLMResponseFormatError extends Error {
-    constructor(message: string) {
-        super(message)
-        this.name = 'LLMResponseFormatError'
-    }
+export enum Errors {
+    LLM_RESPONSE_MISSING_CONTENT,
+    LLM_RESPONSE_PARSE_ERROR,
+    LLM_API_ERROR,
 }
