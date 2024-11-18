@@ -1,24 +1,30 @@
-import { Recipe, RecipeInput } from "../__generated__/types";
-import RecipeModel from "../models/recipe.js";
+import { Recipe, RecipeInput } from '../__generated__/types';
+import RecipeModel from '../models/recipe.js';
 
+/**
+ *
+ */
 export async function getRecipes(): Promise<Recipe[]> {
-    let recipes
+    let recipes;
     try {
-        recipes = await RecipeModel.find({})
+        recipes = await RecipeModel.find({});
     } catch (error) {
-        console.error(error)
-        throw error
+        console.error(error);
+        throw error;
     }
-    return recipes
+    return recipes;
 }
 
+/**
+ *
+ */
 export async function addRecipes(recipes: RecipeInput[]): Promise<Recipe[]> {
-    let insertedRecipes
+    let insertedRecipes;
     try {
-        insertedRecipes = await RecipeModel.insertMany(recipes)
+        insertedRecipes = await RecipeModel.insertMany(recipes);
     } catch (error) {
-        console.error(error) 
-        throw error
+        console.error(error);
+        throw error;
     }
-    return insertedRecipes
+    return insertedRecipes;
 }

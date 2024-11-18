@@ -1,75 +1,75 @@
-import OpenAI from "openai";
+import OpenAI from 'openai';
 import { GraphQLError } from 'graphql';
 
-import { Menu, RecipeInput } from "../__generated__/types";
-import openai from "../setup/openai";
-import { Errors } from "../utils/errors"
-
+import { Menu, RecipeInput } from '../__generated__/types';
+import openai from '../setup/openai';
+import { Errors } from '../utils/errors';
 
 function delay(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ *
+ */
 export async function getMenus() {
-    console.log("Getting menus")
-    await delay(2000)
-    const menu = [{
-        courses: [
-            {
-                name: "Course 1",
-                description: "This is a yummy course."
-            },
-            {
-                name: "Course 2",
-                description: "This is also a yummy course."
-            },
-            {
-                name: "Course 3",
-                description: "This might be a yummy dessert course."
-            }
-        ],
-        backgroundImage: 1
-    }]
-    return menu
+    console.log('Getting menus');
+    await delay(2000);
+    const menu = [
+        {
+            courses: [
+                {
+                    name: 'Course 1',
+                    description: 'This is a yummy course.'
+                },
+                {
+                    name: 'Course 2',
+                    description: 'This is also a yummy course.'
+                },
+                {
+                    name: 'Course 3',
+                    description: 'This might be a yummy dessert course.'
+                }
+            ],
+            backgroundImage: 1
+        }
+    ];
+    return menu;
 }
-
 
 /**
  * Service method used to generate a Menu based on an array of Recipes.
  */
 export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
-
     let completion: OpenAI.Chat.Completions.ChatCompletion & {
         _request_id?: string | null;
-    }
+    };
     try {
         completion = await openai.chat.completions.create({
-            model: process.env.GENERATE_RECIPE_MODEL ?? "gpt-4o",
+            model: process.env.GENERATE_RECIPE_MODEL ?? 'gpt-4o',
             messages: [
-                { 
-                    role: "system", 
-                    content: 
-                    `
+                {
+                    role: 'system',
+                    content: `
                         You are a master chef preparing a meal for your friends. 
                         Pick out the 5 most important ingredients of each recipe presented to you formatted as a comma separated string. 
                         Please order the ingredients by their importance to the dish starting with most important. 
                         Please use a JSON Array to hold a list of the generated strings.  
-                    ` 
+                    `
                 },
                 {
-                    role: "user",
-                    content: JSON.stringify(recipes),
-                },
-            ],
+                    role: 'user',
+                    content: JSON.stringify(recipes)
+                }
+            ]
         });
     } catch (error) {
-        const errorMessage = 'An error occurred requesting LLM API.';
+        const errorMessage = `An error occurred requesting LLM API. Error: ${error}`;
         console.error(errorMessage);
         throw new GraphQLError(errorMessage, {
-            extensions: { code: Errors.LLM_API_ERROR },
+            extensions: { code: Errors.LLM_API_ERROR }
         });
     }
-    
 
     const descriptions = _extractJsonArrayFromCompletion(completion);
 
@@ -77,7 +77,7 @@ export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
         const errorMessage = 'LLM did not respond with appropriate number of recipe descriptions.';
         console.error(errorMessage);
         throw new GraphQLError(errorMessage, {
-            extensions: { code: Errors.LLM_RESPONSE_PARSE_ERROR },
+            extensions: { code: Errors.LLM_RESPONSE_PARSE_ERROR }
         });
     }
 
@@ -85,32 +85,32 @@ export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
         return {
             name: recipes[i].name,
             description: content
-        }
-    })
+        };
+    });
 
     const menu = {
         courses: courses,
         backgroundImage: 1
-    }
+    };
 
-    return menu
+    return menu;
 }
 
-
 function _extractJsonArrayFromCompletion(
-    completion: Nullable<OpenAI.Chat.Completions.ChatCompletion & {
-        _request_id?: Nullable<string>;
-    }>
+    completion: Nullable<
+        OpenAI.Chat.Completions.ChatCompletion & {
+            _request_id?: Nullable<string>;
+        }
+    >
 ): string[] {
-
     // Check for valid content
     if (!completion?.choices?.[0]?.message?.content) {
         const errorMessage = 'LLM response has not content.';
         console.error(errorMessage);
         throw new GraphQLError(errorMessage, {
-            extensions: { code: Errors.LLM_RESPONSE_PARSE_ERROR },
+            extensions: { code: Errors.LLM_RESPONSE_PARSE_ERROR }
         });
-    } 
+    }
 
     const content = completion.choices[0].message.content;
 
@@ -122,7 +122,7 @@ function _extractJsonArrayFromCompletion(
         const errorMessage = `Content does not contain a valid JSON array. Content received: "${content}"`;
         console.error(errorMessage);
         throw new GraphQLError(errorMessage, {
-            extensions: { code: Errors.LLM_RESPONSE_PARSE_ERROR },
+            extensions: { code: Errors.LLM_RESPONSE_PARSE_ERROR }
         });
     }
 
@@ -135,8 +135,7 @@ function _extractJsonArrayFromCompletion(
         const errorMessage = `Failed to parse LLM Response as JSON. Content received: "${jsonArrayString}"`;
         console.error(errorMessage, error);
         throw new GraphQLError(errorMessage, {
-            extensions: { code: Errors.LLM_RESPONSE_PARSE_ERROR },
+            extensions: { code: Errors.LLM_RESPONSE_PARSE_ERROR }
         });
     }
 }
-

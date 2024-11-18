@@ -1,8 +1,11 @@
-import { getModelForClass, modelOptions, prop } from "@typegoose/typegoose";
+import { getModelForClass, modelOptions, prop } from '@typegoose/typegoose';
 
-@modelOptions({ schemaOptions: { timestamps: true }, options: { customName: 'Recipe' } })
+@modelOptions({
+    schemaOptions: { timestamps: true },
+    options: { customName: 'Recipe' }
+})
 class RecipeClass {
-    @prop({ required: true})
+    @prop({ required: true })
     name!: string;
 
     @prop()
@@ -14,4 +17,4 @@ class RecipeClass {
 
 const RecipeModel = getModelForClass(RecipeClass);
 
-export default RecipeModel
+export default RecipeModel;
