@@ -1,9 +1,8 @@
 import OpenAI from 'openai';
-import { GraphQLError } from 'graphql';
 
 import { Menu, RecipeInput } from '../__generated__/types';
 import openai from '../setup/openai';
-import { Errors } from '../utils/errors';
+import { Errors, logAndThrowError } from '../utils/errors';
 
 function delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -41,9 +40,7 @@ export async function getMenus() {
  * Service method used to generate a Menu based on an array of Recipes.
  */
 export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
-    let completion: OpenAI.Chat.Completions.ChatCompletion & {
-        _request_id?: string | null;
-    };
+    let completion;
     try {
         completion = await openai.chat.completions.create({
             model: process.env.GENERATE_RECIPE_MODEL ?? 'gpt-4o',
@@ -64,20 +61,68 @@ export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
             ]
         });
     } catch (error) {
-        const errorMessage = `An error occurred requesting LLM API. Error: ${error}`;
-        console.error(errorMessage);
-        throw new GraphQLError(errorMessage, {
-            extensions: { code: Errors.LLM_API_ERROR }
+        logAndThrowError({
+            message: 'An error occurred requesting LLM API',
+            error,
+            code: Errors.LLM_API_ERROR
         });
     }
 
     const descriptions = _extractJsonArrayFromCompletion(completion);
 
+    const menu = _constructMenu(recipes, descriptions);
+
+    return menu;
+}
+
+function _extractJsonArrayFromCompletion(
+    completion: Nullable<
+        OpenAI.Chat.Completions.ChatCompletion & {
+            _request_id?: Nullable<string>;
+        }
+    >
+): string[] {
+    // Check for valid content
+    if (!completion?.choices?.[0]?.message?.content) {
+        logAndThrowError({
+            message: 'LLM response has no content.',
+            code: Errors.LLM_RESPONSE_PARSE_ERROR
+        });
+    }
+
+    const content = completion.choices[0].message.content;
+
+    // Locate JSON array indices
+    const jsonStartIndex = content.indexOf('[');
+    const jsonEndIndex = content.indexOf(']');
+
+    if (jsonStartIndex === -1 || jsonEndIndex === -1) {
+        logAndThrowError({
+            message: `Content does not contain a valid JSON array. Content received: "${content}"`,
+            code: Errors.LLM_RESPONSE_PARSE_ERROR
+        });
+    }
+
+    const jsonArrayString = content.substring(jsonStartIndex, jsonEndIndex + 1);
+
+    // Attempt to parse the JSON array
+    try {
+        return JSON.parse(jsonArrayString);
+    } catch (error) {
+        logAndThrowError({
+            message: `Failed to parse LLM Response as JSON. Content received: "${jsonArrayString}"`,
+            error: error,
+            code: Errors.LLM_RESPONSE_PARSE_ERROR
+        });
+    }
+}
+
+function _constructMenu(recipes: RecipeInput[], descriptions: string[]): Menu {
+
     if (descriptions.length != recipes.length) {
-        const errorMessage = 'LLM did not respond with appropriate number of recipe descriptions.';
-        console.error(errorMessage);
-        throw new GraphQLError(errorMessage, {
-            extensions: { code: Errors.LLM_RESPONSE_PARSE_ERROR }
+        logAndThrowError({
+            message: 'LLM did not respond with appropriate number of recipe descriptions.',
+            code: Errors.LLM_RESPONSE_PARSE_ERROR
         });
     }
 
@@ -94,48 +139,4 @@ export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
     };
 
     return menu;
-}
-
-function _extractJsonArrayFromCompletion(
-    completion: Nullable<
-        OpenAI.Chat.Completions.ChatCompletion & {
-            _request_id?: Nullable<string>;
-        }
-    >
-): string[] {
-    // Check for valid content
-    if (!completion?.choices?.[0]?.message?.content) {
-        const errorMessage = 'LLM response has not content.';
-        console.error(errorMessage);
-        throw new GraphQLError(errorMessage, {
-            extensions: { code: Errors.LLM_RESPONSE_PARSE_ERROR }
-        });
-    }
-
-    const content = completion.choices[0].message.content;
-
-    // Locate JSON array indices
-    const jsonStartIndex = content.indexOf('[');
-    const jsonEndIndex = content.indexOf(']');
-
-    if (jsonStartIndex === -1 || jsonEndIndex === -1) {
-        const errorMessage = `Content does not contain a valid JSON array. Content received: "${content}"`;
-        console.error(errorMessage);
-        throw new GraphQLError(errorMessage, {
-            extensions: { code: Errors.LLM_RESPONSE_PARSE_ERROR }
-        });
-    }
-
-    const jsonArrayString = content.substring(jsonStartIndex, jsonEndIndex + 1);
-
-    // Attempt to parse the JSON array
-    try {
-        return JSON.parse(jsonArrayString);
-    } catch (error) {
-        const errorMessage = `Failed to parse LLM Response as JSON. Content received: "${jsonArrayString}"`;
-        console.error(errorMessage, error);
-        throw new GraphQLError(errorMessage, {
-            extensions: { code: Errors.LLM_RESPONSE_PARSE_ERROR }
-        });
-    }
 }
