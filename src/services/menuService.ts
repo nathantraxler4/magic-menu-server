@@ -2,8 +2,8 @@ import OpenAI from "openai";
 import { GraphQLError } from 'graphql';
 
 import { Menu, RecipeInput } from "../__generated__/types";
-import openai from "../setup/openai.js";
-import { Errors } from "../utils/errors.js"
+import openai from "../setup/openai";
+import { Errors } from "../utils/errors"
 
 
 function delay(ms: number) {
@@ -73,6 +73,14 @@ export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
 
     const descriptions = _extractJsonArrayFromCompletion(completion);
 
+    if (descriptions.length != recipes.length) {
+        const errorMessage = 'LLM did not respond with appropriate number of recipe descriptions.';
+        console.error(errorMessage);
+        throw new GraphQLError(errorMessage, {
+            extensions: { code: Errors.LLM_RESPONSE_PARSE_ERROR },
+        });
+    }
+
     const courses = descriptions.map((content: string, i: number) => {
         return {
             name: recipes[i].name,
@@ -97,7 +105,7 @@ function _extractJsonArrayFromCompletion(
 
     // Check for valid content
     if (!completion?.choices?.[0]?.message?.content) {
-        const errorMessage = 'Could not parse LLM response.';
+        const errorMessage = 'LLM response has not content.';
         console.error(errorMessage);
         throw new GraphQLError(errorMessage, {
             extensions: { code: Errors.LLM_RESPONSE_PARSE_ERROR },
