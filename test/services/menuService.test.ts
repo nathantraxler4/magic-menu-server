@@ -1,7 +1,7 @@
 import '../../src/setup/config';
 import { describe, test, expect, jest } from '@jest/globals';
 import * as menuService from '../../src/services/menuService';
-import openai from '../../src/setup/openai';
+import openai from '../../src/setup/openai.js';
 import { recipes } from '../mocks/recipes';
 import { beforeEach } from 'node:test';
 
