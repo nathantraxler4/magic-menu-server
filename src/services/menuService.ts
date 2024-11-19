@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { Menu, RecipeInput } from '../__generated__/types';
 import openai from '../setup/openai';
 import { Errors, logAndThrowError } from '../utils/errors';
+import MenuModel from '../models/menu';
 
 function delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -72,6 +73,8 @@ export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
 
     const menu = _constructMenu(recipes, descriptions);
 
+    await insertMenus([menu]);
+
     return menu;
 }
 
@@ -118,7 +121,6 @@ function _extractJsonArrayFromCompletion(
 }
 
 function _constructMenu(recipes: RecipeInput[], descriptions: string[]): Menu {
-
     if (descriptions.length != recipes.length) {
         logAndThrowError({
             message: 'LLM did not respond with appropriate number of recipe descriptions.',
@@ -139,4 +141,16 @@ function _constructMenu(recipes: RecipeInput[], descriptions: string[]): Menu {
     };
 
     return menu;
+}
+
+async function insertMenus(menus: Menu[]) {
+    try {
+        await MenuModel.insertMany(menus);
+    } catch (error) {
+        logAndThrowError({
+            message: `Failed to insert menus into MongoDB. Menus: "${menus}"`,
+            error: error,
+            code: Errors.MONGO_DB_ERROR
+        });
+    }
 }

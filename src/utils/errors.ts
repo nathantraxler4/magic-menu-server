@@ -3,7 +3,8 @@ import { GraphQLError } from 'graphql';
 export enum Errors {
     LLM_RESPONSE_MISSING_CONTENT,
     LLM_RESPONSE_PARSE_ERROR,
-    LLM_API_ERROR
+    LLM_API_ERROR,
+    MONGO_DB_ERROR
 }
 
 /**
