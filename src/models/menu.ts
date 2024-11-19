@@ -1,27 +1,23 @@
-import { getModelForClass, modelOptions, prop, Severity } from '@typegoose/typegoose';
+import { getModelForClass, modelOptions, prop } from '@typegoose/typegoose';
 
 @modelOptions({
-    schemaOptions: { timestamps: true },
-    options: { customName: 'Menu' }
-})
-class CourseClass {
-    @prop({ required: true })
-    name!: string;
-
-    @prop()
-    description!: string;
-}
-
-@modelOptions({
-    schemaOptions: { timestamps: true },
+    schemaOptions: { timestamps: true }, 
     options: { customName: 'Menu' }
 })
 class MenuClass {
     @prop({ required: true })
     backgroundImage!: number;
 
-    @prop({ required: true, allowMixed: Severity.ALLOW })
+    @prop({ required: true, type: () => CourseClass })
     courses!: CourseClass[];
+}
+
+class CourseClass {
+    @prop({ required: true })
+    name!: string;
+
+    @prop()
+    description!: string;
 }
 
 const MenuModel = getModelForClass(MenuClass);
