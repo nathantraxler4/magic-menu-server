@@ -1,5 +1,5 @@
 import { Recipe, RecipeInput } from '../__generated__/types';
-import RecipeModel from '../models/recipe.js';
+import RecipeModel from '../models/recipe';
 
 /**
  *

@@ -1,6 +1,6 @@
-import * as menuService from '../services/menuService.js';
-import * as recipeService from '../services/recipeService.js';
-import { Resolvers } from '../__generated__/types.js';
+import * as menuService from '../services/menuService';
+import * as recipeService from '../services/recipeService';
+import { Resolvers } from '../__generated__/types';
 
 const resolvers: Resolvers = {
     Query: {

@@ -1,9 +1,9 @@
 import OpenAI from 'openai';
 
 import { Menu, RecipeInput } from '../__generated__/types';
-import openai from '../setup/openai.js';
-import { Errors, logAndThrowError } from '../utils/errors.js';
-import MenuModel from '../models/menu.js';
+import openai from '../setup/openai';
+import { Errors, logAndThrowError } from '../utils/errors';
+import MenuModel from '../models/menu';
 
 function delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
