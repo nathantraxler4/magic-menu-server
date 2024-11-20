@@ -63,7 +63,7 @@ export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
         });
     } catch (error) {
         logAndThrowError({
-            message: 'An error occurred requesting LLM API',
+            message: 'An error occurred requesting LLM API.',
             error,
             code: Errors.LLM_API_ERROR
         });
@@ -73,7 +73,7 @@ export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
 
     const menu = _constructMenu(recipes, descriptions);
 
-    await insertMenus([menu]);
+    // await insertMenus([menu]);
 
     return menu;
 }

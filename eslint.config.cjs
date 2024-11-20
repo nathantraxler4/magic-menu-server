@@ -1,9 +1,11 @@
-import globals from 'globals';
-import pluginJs from '@eslint/js';
-import tseslint from 'typescript-eslint';
-import jsdoc from 'eslint-plugin-jsdoc';
+/* eslint-disable no-undef */
+/* eslint-disable @typescript-eslint/no-require-imports */
+const globals = require('globals');
+const pluginJs = require('@eslint/js');
+const tseslint = require('typescript-eslint');
+const jsdoc = require('eslint-plugin-jsdoc');
 
-export default [
+module.exports = [
     { ignores: ['dist/', 'src/__generated__/'] },
     { files: ['**/*.{js,mjs,cjs,ts,jsx,tsx}'] },
     { languageOptions: { globals: globals.browser } },
