@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import type { Nullable } from '../types';
 
 import { Menu, RecipeInput } from '../__generated__/types';
 import openai from '../setup/openai';

@@ -7,7 +7,9 @@ import resolvers from './graphql/resolvers';
 import mongoose from 'mongoose';
 
 (async () => {
-    const typeDefs = readFileSync('./dist/graphql/schema.graphql', {
+    const graphqlSchemaPath = process.env.NODE_ENV == 'LOCAL' ? './src/graphql/schema.graphql' : './dist/graphql/schema.graphql';
+
+    const typeDefs = readFileSync(graphqlSchemaPath, {
         encoding: 'utf-8'
     });
 
