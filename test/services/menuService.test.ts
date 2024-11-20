@@ -168,7 +168,7 @@ describe('generateMenu', () => {
             );
 
             await expect(menuService.generateMenu(recipes)).rejects.toThrow(
-                'LLM response has not content.'
+                'LLM response has no content.'
             );
 
             expect(mockCreate).toHaveBeenCalled();
@@ -180,7 +180,7 @@ describe('generateMenu', () => {
             mockCreate.mockImplementation(() => Promise.reject(new Error('API Error')));
 
             await expect(menuService.generateMenu(recipes)).rejects.toThrow(
-                'An error occurred requesting LLM API.'
+                'An error occurred requesting LLM API. Error: Error: API Error'
             );
 
             expect(mockCreate).toHaveBeenCalled();
