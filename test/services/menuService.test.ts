@@ -19,7 +19,6 @@ jest.mock('../../src/setup/openai', () => {
     };
 });
 
-
 // Mock the Mongoose Model
 jest.mock('../../src/models/menu', () => {
     return {
@@ -94,7 +93,7 @@ describe('generateMenu', () => {
                     { description: 'some description2', name: 'name2' },
                     { description: 'some description3', name: 'name3' }
                 ]
-            }
+            };
 
             const menu = await menuService.generateMenu(recipes);
 
