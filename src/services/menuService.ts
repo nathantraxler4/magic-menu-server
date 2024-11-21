@@ -74,7 +74,7 @@ export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
 
     const menu = _constructMenu(recipes, descriptions);
 
-    // await insertMenus([menu]);
+    await insertMenus([menu]);
 
     return menu;
 }
@@ -144,7 +144,10 @@ function _constructMenu(recipes: RecipeInput[], descriptions: string[]): Menu {
     return menu;
 }
 
-async function insertMenus(menus: Menu[]) {
+/**
+ * Top level service method to insert menus
+ */
+export async function insertMenus(menus: Menu[]) {
     try {
         await MenuModel.insertMany(menus);
     } catch (error) {

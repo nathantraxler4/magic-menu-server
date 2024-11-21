@@ -1,9 +1,9 @@
 import '../../src/setup/config';
-import { describe, test, expect, jest } from '@jest/globals';
+import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 import * as menuService from '../../src/services/menuService';
 import openai from '../../src/setup/openai';
+import MenuModel from '../../src/models/menu';
 import { recipes } from '../mocks/recipes';
-import { beforeEach } from 'node:test';
 
 // Mock the OpenAI client
 jest.mock('../../src/setup/openai', () => {
@@ -19,7 +19,19 @@ jest.mock('../../src/setup/openai', () => {
     };
 });
 
+
+// Mock the Mongoose Model
+jest.mock('../../src/models/menu', () => {
+    return {
+        __esModule: true,
+        default: {
+            insertMany: jest.fn(() => Promise.resolve())
+        }
+    };
+});
+
 const mockCreate = openai.chat.completions.create as jest.Mock;
+const mockInsertMany = MenuModel.insertMany as jest.Mock;
 
 describe('generateMenu', () => {
     beforeEach(() => {
@@ -33,14 +45,16 @@ describe('generateMenu', () => {
                     choices: [{ message: { content: '["some description1"]' } }]
                 })
             );
+            const expectedMenu = {
+                backgroundImage: 1,
+                courses: [{ description: 'some description1', name: 'name1' }]
+            };
 
             const menu = await menuService.generateMenu([recipes[0]]);
 
-            expect(menu).toMatchObject({
-                backgroundImage: 1,
-                courses: [{ description: 'some description1', name: 'name1' }]
-            });
+            expect(menu).toMatchObject(expectedMenu);
             expect(mockCreate).toHaveBeenCalled();
+            expect(mockInsertMany).toHaveBeenCalledWith([expectedMenu]);
         });
     });
 
@@ -55,6 +69,7 @@ describe('generateMenu', () => {
                 'LLM did not respond with appropriate number of recipe descriptions.'
             );
             expect(mockCreate).toHaveBeenCalled();
+            expect(mockInsertMany).not.toHaveBeenCalled();
         });
     });
 
@@ -72,17 +87,20 @@ describe('generateMenu', () => {
                     ]
                 })
             );
-            const menu = await menuService.generateMenu(recipes);
-
-            expect(menu).toMatchObject({
+            const expectedMenu = {
                 backgroundImage: 1,
                 courses: [
                     { description: 'some description1', name: 'name1' },
                     { description: 'some description2', name: 'name2' },
                     { description: 'some description3', name: 'name3' }
                 ]
-            });
+            }
+
+            const menu = await menuService.generateMenu(recipes);
+
+            expect(menu).toMatchObject(expectedMenu);
             expect(mockCreate).toHaveBeenCalled();
+            expect(mockInsertMany).toHaveBeenCalledWith([expectedMenu]);
         });
     });
 
@@ -130,6 +148,7 @@ describe('generateMenu', () => {
             );
 
             expect(mockCreate).toHaveBeenCalled();
+            expect(mockInsertMany).not.toHaveBeenCalled();
         });
     });
 
@@ -152,6 +171,7 @@ describe('generateMenu', () => {
             );
 
             expect(mockCreate).toHaveBeenCalled();
+            expect(mockInsertMany).not.toHaveBeenCalled();
         });
     });
 
@@ -172,6 +192,7 @@ describe('generateMenu', () => {
             );
 
             expect(mockCreate).toHaveBeenCalled();
+            expect(mockInsertMany).not.toHaveBeenCalled();
         });
     });
 
@@ -184,6 +205,7 @@ describe('generateMenu', () => {
             );
 
             expect(mockCreate).toHaveBeenCalled();
+            expect(mockInsertMany).not.toHaveBeenCalled();
         });
     });
 });
