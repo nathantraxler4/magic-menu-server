@@ -1,4 +1,5 @@
-const config = {
+// eslint-disable-next-line no-undef
+module.exports = {
     overwrite: true,
     schema: './src/graphql/schema.graphql',
     generates: {
@@ -7,5 +8,3 @@ const config = {
         }
     }
 };
-
-export default config;

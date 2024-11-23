@@ -6,7 +6,7 @@ import { getModelForClass, modelOptions, prop } from '@typegoose/typegoose';
 })
 class MenuClass {
     @prop({ required: true })
-    backgroundImage!: number;
+    backgroundImage!: string;
 
     @prop({ required: true, type: () => CourseClass })
     courses!: CourseClass[];

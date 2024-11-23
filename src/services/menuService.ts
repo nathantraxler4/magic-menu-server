@@ -32,7 +32,7 @@ export async function getMenus() {
                     description: 'This might be a yummy dessert course.'
                 }
             ],
-            backgroundImage: 1
+            backgroundImage: ''
         }
     ];
     return menu;
@@ -42,40 +42,11 @@ export async function getMenus() {
  * Service method used to generate a Menu based on an array of Recipes.
  */
 export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
-    let completion;
-    try {
-        completion = await openai.chat.completions.create({
-            model: process.env.GENERATE_RECIPE_MODEL ?? 'gpt-4o',
-            messages: [
-                {
-                    role: 'system',
-                    content: `
-                        You are a master chef preparing a meal for your friends. 
-                        Pick out the 5 most important ingredients of each recipe presented to you formatted as a comma separated string. 
-                        Please order the ingredients by their importance to the dish starting with most important. 
-                        Please use a JSON Array to hold a list of the generated strings.  
-                    `
-                },
-                {
-                    role: 'user',
-                    content: JSON.stringify(recipes)
-                }
-            ]
-        });
-    } catch (error) {
-        logAndThrowError({
-            message: 'An error occurred requesting LLM API.',
-            error,
-            code: Errors.LLM_API_ERROR
-        });
-    }
-
+    const [completion, image] = await Promise.all([_generateDescriptions(recipes), _generateBackgroundImage(recipes)]);
+    const imageUrl = image.data[0].url || ''; // TO DO: More robust error handling
     const descriptions = _extractJsonArrayFromCompletion(completion);
-
-    const menu = _constructMenu(recipes, descriptions);
-
+    const menu = _constructMenu(recipes, descriptions, imageUrl);
     await insertMenus([menu]);
-
     return menu;
 }
 
@@ -121,7 +92,7 @@ function _extractJsonArrayFromCompletion(
     }
 }
 
-function _constructMenu(recipes: RecipeInput[], descriptions: string[]): Menu {
+function _constructMenu(recipes: RecipeInput[], descriptions: string[], imageUrl: string): Menu {
     if (descriptions.length != recipes.length) {
         logAndThrowError({
             message: 'LLM did not respond with appropriate number of recipe descriptions.',
@@ -138,7 +109,7 @@ function _constructMenu(recipes: RecipeInput[], descriptions: string[]): Menu {
 
     const menu = {
         courses: courses,
-        backgroundImage: 1
+        backgroundImage: imageUrl
     };
 
     return menu;
@@ -158,3 +129,57 @@ export async function insertMenus(menus: Menu[]) {
         });
     }
 }
+
+async function _generateDescriptions(recipes: RecipeInput[]) {
+    let completion;
+    try {
+        completion = await openai.chat.completions.create({
+            model: process.env.GENERATE_RECIPE_MODEL ?? 'gpt-4o',
+            messages: [
+                {
+                    role: 'system',
+                    content: `
+                        You are a master chef preparing a meal for your friends. 
+                        Pick out the 5 most important ingredients of each recipe presented to you formatted as a comma separated string. 
+                        Please order the ingredients by their importance to the dish starting with most important. 
+                        Please use a JSON Array to hold a list of the generated strings.  
+                    `
+                },
+                {
+                    role: 'user',
+                    content: JSON.stringify(recipes)
+                }
+            ]
+        });
+    } catch (error) {
+        logAndThrowError({
+            message: 'An error occurred requesting LLM API.',
+            error,
+            code: Errors.LLM_API_ERROR
+        });
+    }
+    return completion;
+}
+
+async function _generateBackgroundImage(recipes: RecipeInput[]) {
+    let image;
+    try {
+        image = await openai.images.generate({
+            model: "dall-e-3",
+            prompt: `
+                Please generate me an image without any text for dinner menu that contains the following courses: ${JSON.stringify(recipes.map(r => r.name))}`,
+            n: 1,
+            size: "1024x1792",
+            quality: 'hd',
+            style: 'vivid'
+        });
+    } catch (error) {
+        logAndThrowError({
+            message: 'An error occurred requesting Text-to-Image API.',
+            error,
+            code: Errors.IMAGE_GEN_API_ERROR
+        });
+    }
+    return image;
+}
+

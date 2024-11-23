@@ -6,7 +6,7 @@ type Recipe {
 
 type Menu {
     courses: [Course!]!
-    backgroundImage: Int!
+    backgroundImage: String!
 }
 
 type Course {
