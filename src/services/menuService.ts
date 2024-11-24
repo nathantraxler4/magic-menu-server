@@ -16,27 +16,14 @@ function delay(ms: number) {
  */
 export async function getMenus() {
     logger.info('Getting menus');
-    await delay(2000);
-    const menu = [
-        {
-            courses: [
-                {
-                    name: 'Course 1',
-                    description: 'This is a yummy course.'
-                },
-                {
-                    name: 'Course 2',
-                    description: 'This is also a yummy course.'
-                },
-                {
-                    name: 'Course 3',
-                    description: 'This might be a yummy dessert course.'
-                }
-            ],
-            backgroundImage: ''
-        }
-    ];
-    return menu;
+    let menus;
+    try {
+        menus = await MenuModel.find({});
+    } catch (error) {
+        logger.error(error);
+        throw error;
+    }
+    return menus;
 }
 
 /**

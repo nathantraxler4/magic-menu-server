@@ -22,7 +22,7 @@ input RecipeInput {
 
 type Query {
     recipes: [Recipe!]!
-    menus: [Menu]
+    menus: [Menu!]!
     generateMenu(recipes: [RecipeInput!]!): Menu!
 }
 
