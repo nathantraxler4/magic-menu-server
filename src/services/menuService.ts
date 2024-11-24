@@ -23,6 +23,7 @@ export async function getMenus() {
         logger.error(error);
         throw error;
     }
+    logger.info(`Fetched ${menus.length} menus from the DB.`);
     return menus;
 }
 
