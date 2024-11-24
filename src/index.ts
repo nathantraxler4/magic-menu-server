@@ -1,10 +1,11 @@
 import './setup/config';
 
 import { readFileSync } from 'fs';
-import { ApolloServer } from '@apollo/server';
+import { ApolloServer, ApolloServerPlugin } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import resolvers from './graphql/resolvers';
 import mongoose from 'mongoose';
+import logger from './utils/logger';
 
 (async () => {
     const graphqlSchemaPath =
@@ -21,11 +22,20 @@ import mongoose from 'mongoose';
         // Define context shared across all resolvers and plugins
     }
 
+    const requestLogPlugin: ApolloServerPlugin<MyContext> = {
+        async requestDidStart(requestContext) {
+            if (requestContext.request.operationName != "IntrospectionQuery"){
+                logger.info(`Request started!`, { request: requestContext.request });
+            }
+        },
+      };
+
     // The ApolloServer constructor requires two parameters: your schema
     // definition and your set of resolvers.
     const server = new ApolloServer<MyContext>({
         typeDefs,
         resolvers,
+        plugins: [requestLogPlugin],
         status400ForVariableCoercionErrors: true // Fixes bug introduced in Apollo Server 4
     });
 
@@ -39,5 +49,5 @@ import mongoose from 'mongoose';
         listen: { port: 4000 }
     });
 
-    console.log(`🚀  Server ready at: ${url}`);
+    logger.info(`🚀  Server ready at: ${url}`);
 })();

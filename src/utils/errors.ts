@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import logger from './logger';
 
 export enum Errors {
     LLM_RESPONSE_MISSING_CONTENT,
@@ -21,6 +22,6 @@ export function logAndThrowError({
     code: Errors;
 }): never {
     const errorMessage = `${message}${error ? ` Error: ${error}` : ''}`;
-    console.error(errorMessage);
+    logger.error(errorMessage);
     throw new GraphQLError(errorMessage, { extensions: { code } });
 }

@@ -5,6 +5,7 @@ import { Menu, RecipeInput } from '../__generated__/types';
 import openai from '../setup/openai';
 import { Errors, logAndThrowError } from '../utils/errors';
 import MenuModel from '../models/menu';
+import logger from '../utils/logger';
 
 function delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -14,7 +15,7 @@ function delay(ms: number) {
  *
  */
 export async function getMenus() {
-    console.log('Getting menus');
+    logger.info('Getting menus');
     await delay(2000);
     const menu = [
         {
@@ -42,8 +43,9 @@ export async function getMenus() {
  * Service method used to generate a Menu based on an array of Recipes.
  */
 export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
+    logger.info('Generating menu from recipes.', { recipes });
     const [completion, image] = await Promise.all([_generateDescriptions(recipes), _generateBackgroundImage(recipes)]);
-    const imageUrl = image.data[0].url || ''; // TO DO: More robust error handling
+    const imageUrl = image.data[0].url || ''; // TO DO: Add more robust error handling
     const descriptions = _extractJsonArrayFromCompletion(completion);
     const menu = _constructMenu(recipes, descriptions, imageUrl);
     await insertMenus([menu]);
@@ -81,8 +83,9 @@ function _extractJsonArrayFromCompletion(
     const jsonArrayString = content.substring(jsonStartIndex, jsonEndIndex + 1);
 
     // Attempt to parse the JSON array
+    let descriptions;
     try {
-        return JSON.parse(jsonArrayString);
+        descriptions = JSON.parse(jsonArrayString);
     } catch (error) {
         logAndThrowError({
             message: `Failed to parse LLM Response as JSON. Content received: "${jsonArrayString}"`,
@@ -90,6 +93,8 @@ function _extractJsonArrayFromCompletion(
             code: Errors.LLM_RESPONSE_PARSE_ERROR
         });
     }
+    logger.info('Response from LLM successfully parsed to an array!');
+    return descriptions;
 }
 
 function _constructMenu(recipes: RecipeInput[], descriptions: string[], imageUrl: string): Menu {
@@ -119,6 +124,7 @@ function _constructMenu(recipes: RecipeInput[], descriptions: string[], imageUrl
  * Top level service method to insert menus
  */
 export async function insertMenus(menus: Menu[]) {
+    logger.info('Inserting menus to DB', { menus });
     try {
         await MenuModel.insertMany(menus);
     } catch (error) {
@@ -128,9 +134,11 @@ export async function insertMenus(menus: Menu[]) {
             code: Errors.MONGO_DB_ERROR
         });
     }
+    logger.info('Menus succesfully inserted!');
 }
 
 async function _generateDescriptions(recipes: RecipeInput[]) {
+    logger.info('Requesting LLM to generate descriptions...');
     let completion;
     try {
         completion = await openai.chat.completions.create({
@@ -162,6 +170,7 @@ async function _generateDescriptions(recipes: RecipeInput[]) {
 }
 
 async function _generateBackgroundImage(recipes: RecipeInput[]) {
+    logger.info('Requesting Text-To-Image model to generate background image...');
     let image;
     try {
         image = await openai.images.generate({
@@ -180,6 +189,7 @@ async function _generateBackgroundImage(recipes: RecipeInput[]) {
             code: Errors.IMAGE_GEN_API_ERROR
         });
     }
+
     return image;
 }
 

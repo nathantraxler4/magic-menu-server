@@ -23,7 +23,8 @@
         "dotenv": "^16.4.5",
         "graphql": "^16.9.0",
         "mongoose": "^8.8.1",
-        "openai": "^4.70.2"
+        "openai": "^4.70.2",
+        "winston": "^3.17.0"
     },
     "devDependencies": {
         "@babel/preset-typescript": "^7.26.0",
@@ -32,6 +33,7 @@
         "@graphql-codegen/typescript": "4.1.1",
         "@graphql-codegen/typescript-resolvers": "4.4.0",
         "@types/jest": "^29.5.14",
+        "@types/lodash": "^4.17.13",
         "@types/node": "^22.7.8",
         "eslint": "^9.15.0",
         "eslint-plugin-jsdoc": "^50.5.0",

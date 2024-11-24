@@ -1,5 +1,6 @@
 import { Recipe, RecipeInput } from '../__generated__/types';
 import RecipeModel from '../models/recipe';
+import logger from '../utils/logger';
 
 /**
  *
@@ -9,7 +10,7 @@ export async function getRecipes(): Promise<Recipe[]> {
     try {
         recipes = await RecipeModel.find({});
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         throw error;
     }
     return recipes;
@@ -23,7 +24,7 @@ export async function addRecipes(recipes: RecipeInput[]): Promise<Recipe[]> {
     try {
         insertedRecipes = await RecipeModel.insertMany(recipes);
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         throw error;
     }
     return insertedRecipes;
