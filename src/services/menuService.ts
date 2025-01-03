@@ -7,10 +7,6 @@ import { Errors, logAndThrowError } from '../utils/errors';
 import MenuModel from '../models/menu';
 import logger from '../utils/logger';
 
-function delay(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 /**
  *
  */
@@ -164,7 +160,7 @@ async function _generateBackgroundImage(recipes: RecipeInput[]) {
         image = await openai.images.generate({
             model: "dall-e-3",
             prompt: `
-                Please generate me an image without any text for dinner menu that contains the following courses: ${JSON.stringify(recipes.map(r => r.name))}`,
+                Please generate me an image that does not contain words for a dinner menu that includes the following courses: ${JSON.stringify(recipes.map(r => r.name))}`,
             n: 1,
             size: "1024x1792",
             quality: 'hd',
