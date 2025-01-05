@@ -1,17 +1,6 @@
 import { prop, getModelForClass, modelOptions } from '@typegoose/typegoose';
 
-// Sub-models for nested objects
-class ImageObject {
-    @prop()
-    url?: string;
-
-    @prop()
-    height?: number;
-
-    @prop()
-    width?: number;
-}
-
+@modelOptions({ schemaOptions: { _id: false } })
 class Publisher {
     @prop({ required: true })
     name!: string;
@@ -29,6 +18,7 @@ class Publisher {
     sameAs?: string[];
 }
 
+@modelOptions({ schemaOptions: { _id: false } })
 class AggregateRating {
     @prop()
     ratingValue?: string;
@@ -37,6 +27,7 @@ class AggregateRating {
     ratingCount?: string;
 }
 
+@modelOptions({ schemaOptions: { _id: false } })
 class NutritionInformation {
     @prop()
     calories?: string;
@@ -69,6 +60,7 @@ class NutritionInformation {
     unsaturatedFatContent?: string;
 }
 
+@modelOptions({ schemaOptions: { _id: false } })
 class HowToStep {
     @prop({ required: true })
     text!: string;
@@ -80,32 +72,26 @@ class ScrapedRecipe {
     @prop({ required: true })
     headline!: string;
 
+    @prop({ required: true })
+    name!: string;
+
+    @prop({ required: true })
+    url!: string;
+
+    @prop({ required: true, type: () => [String] })
+    recipeIngredient!: string[];
+
+    @prop({ required: true, type: () => [HowToStep] })
+    recipeInstructions!: HowToStep[];
+
     @prop()
     datePublished?: string;
 
     @prop()
     dateModified?: string;
 
-    @prop()
-    description?: string;
-
-    @prop({ type: () => ImageObject })
-    image?: ImageObject;
-
     @prop({ type: () => Publisher })
     publisher?: Publisher;
-
-    @prop({ required: true })
-    name!: string;
-
-    @prop()
-    url!: string;
-
-    @prop({ type: () => [String] })
-    recipeIngredient!: string[];
-
-    @prop({ type: () => [HowToStep] })
-    recipeInstructions!: HowToStep[];
 
     @prop({ type: () => AggregateRating })
     aggregateRating?: AggregateRating;
