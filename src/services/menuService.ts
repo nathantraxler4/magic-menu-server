@@ -24,11 +24,21 @@ export async function getMenus() {
 }
 
 /**
+ * Service method used to generate a Menu based on a prompt.
+ */
+export async function generateMenuFromPrompt(prompt: string) /*: Promise<Menu>*/ {
+    logger.info('Generating menu from prompt.', { prompt });
+}
+
+/**
  * Service method used to generate a Menu based on an array of Recipes.
  */
 export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
     logger.info('Generating menu from recipes.', { recipes });
-    const [completion, image] = await Promise.all([_generateDescriptions(recipes), _generateBackgroundImage(recipes)]);
+    const [completion, image] = await Promise.all([
+        _generateDescriptions(recipes),
+        _generateBackgroundImage(recipes)
+    ]);
     const imageUrl = image.data[0].url || ''; // TO DO: Add more robust error handling
     const descriptions = _extractJsonArrayFromCompletion(completion);
     const menu = _constructMenu(recipes, descriptions, imageUrl);
@@ -158,11 +168,11 @@ async function _generateBackgroundImage(recipes: RecipeInput[]) {
     let image;
     try {
         image = await openai.images.generate({
-            model: "dall-e-3",
+            model: 'dall-e-3',
             prompt: `
-                Please generate me an image that does not contain words for a dinner menu that includes the following courses: ${JSON.stringify(recipes.map(r => r.name))}`,
+                Please generate me an image that does not contain words for a dinner menu that includes the following courses: ${JSON.stringify(recipes.map((r) => r.name))}`,
             n: 1,
-            size: "1024x1792",
+            size: '1024x1792',
             quality: 'hd',
             style: 'vivid'
         });
@@ -176,4 +186,3 @@ async function _generateBackgroundImage(recipes: RecipeInput[]) {
 
     return image;
 }
-

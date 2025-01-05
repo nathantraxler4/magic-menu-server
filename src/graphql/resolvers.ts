@@ -8,6 +8,10 @@ const resolvers: Resolvers = {
         menus: async () => await menuService.getMenus(),
         generateMenu: async (_parent, args) => {
             return await menuService.generateMenu(args.recipes);
+        },
+        generateMenuFromPrompt: async (_parent, args) => {
+            await menuService.generateMenuFromPrompt(args.prompt);
+            return '';
         }
     },
     Mutation: {

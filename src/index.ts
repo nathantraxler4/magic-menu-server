@@ -24,11 +24,11 @@ import logger from './utils/logger';
 
     const requestLogPlugin: ApolloServerPlugin<MyContext> = {
         async requestDidStart(requestContext) {
-            if (requestContext.request.operationName != "IntrospectionQuery"){
+            if (requestContext.request.operationName != 'IntrospectionQuery') {
                 logger.info(`Request started!`, { request: requestContext.request });
             }
-        },
-      };
+        }
+    };
 
     // The ApolloServer constructor requires two parameters: your schema
     // definition and your set of resolvers.

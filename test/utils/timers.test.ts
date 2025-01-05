@@ -2,7 +2,6 @@ import { timedFunction, timedAsyncFunction } from '../../src/utils/timers';
 import logger from '../../src/utils/logger';
 import { describe, expect, test, jest } from '@jest/globals';
 
-
 // Mock the logger to test log outputs
 jest.mock('../../src/utils/logger');
 
@@ -17,7 +16,9 @@ describe('timedFunction', () => {
     test('should log the time taken for the function to execute', () => {
         const mockFn = jest.fn(() => 42); // Mock synchronous function
         timedFunction(mockFn);
-        expect(logger.info).toHaveBeenCalledWith(expect.stringMatching(/The function took: \d+(\.\d+)? milliseconds/));
+        expect(logger.info).toHaveBeenCalledWith(
+            expect.stringMatching(/The function took: \d+(\.\d+)? milliseconds/)
+        );
     });
 });
 
@@ -32,6 +33,8 @@ describe('timedAsyncFunction', () => {
     test('should log the time taken for the async function to execute', async () => {
         const mockAsyncFn = jest.fn(async () => 'Hello, async!'); // Mock asynchronous function
         await timedAsyncFunction(mockAsyncFn);
-        expect(logger.info).toHaveBeenCalledWith(expect.stringMatching(/The function took: \d+(\.\d+)? milliseconds/));
+        expect(logger.info).toHaveBeenCalledWith(
+            expect.stringMatching(/The function took: \d+(\.\d+)? milliseconds/)
+        );
     });
 });

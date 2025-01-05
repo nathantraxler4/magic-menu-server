@@ -24,6 +24,7 @@ type Query {
     recipes: [Recipe!]!
     menus: [Menu!]!
     generateMenu(recipes: [RecipeInput!]!): Menu!
+    generateMenuFromPrompt(prompt: String!): String!
 }
 
 type Mutation {
