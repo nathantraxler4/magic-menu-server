@@ -6,6 +6,10 @@ import openai from '../setup/openai';
 import { Errors, logAndThrowError } from '../utils/errors';
 import MenuModel from '../models/menu';
 import logger from '../utils/logger';
+import pc from '../setup/pinecone';
+
+const INDEX_NAME = 'recipes';
+const EMBEDDING_MODEL = 'multilingual-e5-large';
 
 /**
  *
@@ -28,6 +32,18 @@ export async function getMenus() {
  */
 export async function generateMenuFromPrompt(prompt: string) /*: Promise<Menu>*/ {
     logger.info('Generating menu from prompt.', { prompt });
+
+    const embedding = await pc.inference.embed(EMBEDDING_MODEL, [prompt], { inputType: 'query' });
+
+    const index = pc.index(INDEX_NAME, 'https://recipes2-xx1tt13.svc.aped-4627-b74a.pinecone.io');
+
+    const queryResponse = await index.query({
+        topK: 3,
+        vector: embedding[0].values ?? [],
+        includeValues: false,
+        includeMetadata: true
+    });
+    return queryResponse;
 }
 
 /**
