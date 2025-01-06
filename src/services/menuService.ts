@@ -7,8 +7,11 @@ import { Errors, logAndThrowError } from '../utils/errors';
 import MenuModel from '../models/menu';
 import logger from '../utils/logger';
 import pc from '../setup/pinecone';
+import type { QueryResponse, EmbeddingsList, Index } from '@pinecone-database/pinecone';
+import { GraphQLError } from 'graphql';
 
 const INDEX_NAME = 'recipes';
+const INDEX_HOST = 'https://recipes2-xx1tt13.svc.aped-4627-b74a.pinecone.io';
 const EMBEDDING_MODEL = 'multilingual-e5-large';
 
 /**
@@ -32,18 +35,52 @@ export async function getMenus() {
  */
 export async function generateMenuFromPrompt(prompt: string) /*: Promise<Menu>*/ {
     logger.info('Generating menu from prompt.', { prompt });
-
-    const embedding = await pc.inference.embed(EMBEDDING_MODEL, [prompt], { inputType: 'query' });
-
-    const index = pc.index(INDEX_NAME, 'https://recipes2-xx1tt13.svc.aped-4627-b74a.pinecone.io');
-
-    const queryResponse = await index.query({
-        topK: 3,
-        vector: embedding[0].values ?? [],
-        includeValues: false,
-        includeMetadata: true
-    });
+    const index: Index = pc.index(INDEX_NAME, INDEX_HOST);
+    const vector = await getEmbedding(prompt);
+    const queryResponse = await queryPinecone(index, vector);
     return queryResponse;
+}
+
+async function queryPinecone(index: Index, vector: number[]): Promise<QueryResponse> {
+    try {
+        const queryResponse: QueryResponse = await index.query({
+            topK: 3,
+            vector: vector,
+            includeValues: false,
+            includeMetadata: true
+        });
+
+        logger.debug("Pinecone query response.", { queryResponse });
+
+        return queryResponse;
+    } catch (error) {
+        logAndThrowError({
+            message: "Error occurred querying pinecone.",
+            error: error,
+            code: Errors.PINECONE_ERROR
+        });
+    }
+}
+
+async function getEmbedding(prompt: string): Promise<number[]> {
+    let embeddings: EmbeddingsList;
+    try {
+        embeddings = await pc.inference.embed(EMBEDDING_MODEL, [prompt], { inputType: 'query' });
+
+        if (!embeddings[0].values) {
+            throw new GraphQLError("Query did not return values for embedding.", { extensions: { code: Errors.PINECONE_ERROR } });
+        }
+
+        logger.debug("Embedding generated successfully.", { embeddings });
+
+        return embeddings[0].values;
+    } catch (error) {
+        logAndThrowError({
+            message: "Error occurred embedding the prompt.",
+            error: error,
+            code: Errors.PINECONE_ERROR
+        });
+    }
 }
 
 /**

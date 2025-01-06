@@ -6,7 +6,8 @@ export enum Errors {
     LLM_RESPONSE_PARSE_ERROR,
     LLM_API_ERROR,
     IMAGE_GEN_API_ERROR,
-    MONGO_DB_ERROR
+    MONGO_DB_ERROR,
+    PINECONE_ERROR
 }
 
 /**
