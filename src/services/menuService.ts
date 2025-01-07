@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import type { Nullable } from '../types';
+import type { Nullable, PineconeMetaData } from '../types';
 
 import { Menu, RecipeInput } from '../__generated__/types';
 import openai from '../setup/openai';
@@ -35,10 +35,24 @@ export async function getMenus() {
  */
 export async function generateMenuFromPrompt(prompt: string) /*: Promise<Menu>*/ {
     logger.info('Generating menu from prompt.', { prompt });
-    const index: Index = pc.index(INDEX_NAME, INDEX_HOST);
+    const index: Index = pc.index<PineconeMetaData>(INDEX_NAME, INDEX_HOST);
     const vector = await getEmbedding(prompt);
     const queryResponse = await queryPinecone(index, vector);
-    return queryResponse;
+    validateQueryResponse(queryResponse);
+    const recipes: PineconeMetaData[] = queryResponse.matches.map((m) => m.metadata!) as PineconeMetaData[];;
+    const menu = generateMenu(recipes);
+    return menu;
+}
+
+function validateQueryResponse(queryResponse: QueryResponse) {
+    for (const match of queryResponse.matches) {
+        if (!match.metadata) {
+           logAndThrowError({
+                message: `Pinecone record missing metadata: ${match}.`,
+                code: Errors.PINECONE_ERROR
+           });
+        }
+    }
 }
 
 async function queryPinecone(index: Index, vector: number[]): Promise<QueryResponse> {
@@ -86,7 +100,7 @@ async function getEmbedding(prompt: string): Promise<number[]> {
 /**
  * Service method used to generate a Menu based on an array of Recipes.
  */
-export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
+export async function generateMenu(recipes: RecipeInput[] | PineconeMetaData[]): Promise<Menu> {
     logger.info('Generating menu from recipes.', { recipes });
     const [completion, image] = await Promise.all([
         _generateDescriptions(recipes),
@@ -94,7 +108,8 @@ export async function generateMenu(recipes: RecipeInput[]): Promise<Menu> {
     ]);
     const imageUrl = image.data[0].url || ''; // TO DO: Add more robust error handling
     const descriptions = _extractJsonArrayFromCompletion(completion);
-    const menu = _constructMenu(recipes, descriptions, imageUrl);
+    const names = recipes.map((r) => r.name);
+    const menu = _constructMenu(names, descriptions, imageUrl);
     await insertMenus([menu]);
     return menu;
 }
@@ -144,8 +159,8 @@ function _extractJsonArrayFromCompletion(
     return descriptions;
 }
 
-function _constructMenu(recipes: RecipeInput[], descriptions: string[], imageUrl: string): Menu {
-    if (descriptions.length != recipes.length) {
+function _constructMenu(names: string[], descriptions: string[], imageUrl: string): Menu {
+    if (descriptions.length != names.length) {
         logAndThrowError({
             message: 'LLM did not respond with appropriate number of recipe descriptions.',
             code: Errors.LLM_RESPONSE_PARSE_ERROR
@@ -154,7 +169,7 @@ function _constructMenu(recipes: RecipeInput[], descriptions: string[], imageUrl
 
     const courses = descriptions.map((content: string, i: number) => {
         return {
-            name: recipes[i].name,
+            name: names[i],
             description: content
         };
     });
@@ -184,7 +199,7 @@ export async function insertMenus(menus: Menu[]) {
     logger.info('Menus succesfully inserted!');
 }
 
-async function _generateDescriptions(recipes: RecipeInput[]) {
+async function _generateDescriptions(recipes: RecipeInput[] | PineconeMetaData[]) {
     logger.info('Requesting LLM to generate descriptions...');
     let completion;
     try {
@@ -216,14 +231,15 @@ async function _generateDescriptions(recipes: RecipeInput[]) {
     return completion;
 }
 
-async function _generateBackgroundImage(recipes: RecipeInput[]) {
+async function _generateBackgroundImage(recipes: RecipeInput[]| PineconeMetaData[]) {
     logger.info('Requesting Text-To-Image model to generate background image...');
     let image;
+
     try {
         image = await openai.images.generate({
             model: 'dall-e-3',
             prompt: `
-                Please generate me an image that does not contain words for a dinner menu that includes the following courses: ${JSON.stringify(recipes.map((r) => r.name))}`,
+                Please generate me an image that does not contain words for a dinner menu that includes the following courses: ${JSON.stringify(recipes)}`,
             n: 1,
             size: '1024x1792',
             quality: 'hd',
