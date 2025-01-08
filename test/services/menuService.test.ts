@@ -197,4 +197,19 @@ describe('generateMenu', () => {
             expect(mockInsertMany).not.toHaveBeenCalled();
         });
     });
+
+    describe('WHEN saving the menu to DB fails', () => {
+        test('THEN a DATABASE_ERROR is thrown.', async () => {
+            mockChatResponse('["some description1"]');
+            mockImageResponse('some url.');
+            mockInsertMany.mockImplementation(() => Promise.reject(new Error('DB Error')));
+        
+            await expect(menuService.generateMenu([recipes[0]])).rejects.toThrow(
+                `Failed to insert menus into MongoDB. Menus: "${[recipes[0]]}" Error: Error: DB Error`
+            );
+        
+            expect(mockCreate).toHaveBeenCalled();
+            expect(mockInsertMany).toHaveBeenCalled();
+        });
+    });
 });
