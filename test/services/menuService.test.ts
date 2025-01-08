@@ -36,6 +36,22 @@ const mockCreate = openai.chat.completions.create as jest.Mock;
 const mockInsertMany = MenuModel.insertMany as jest.Mock;
 const mockImageGenerate = openai.images.generate as jest.Mock;
 
+function mockChatResponse(response: string) {
+    mockCreate.mockImplementation(() =>
+        Promise.resolve({
+            choices: [{ message: { content: response } }]
+        })
+    );
+}
+
+const mockImageResponse = (url: string) => {
+    mockImageGenerate.mockImplementation(() =>
+        Promise.resolve({
+            data: [{ url }]
+        })
+    );
+};
+
 describe('generateMenu', () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -43,16 +59,8 @@ describe('generateMenu', () => {
 
     describe('WHEN calling generate recipe with one recipe', () => {
         test('THEN a menu object is returned', async () => {
-            mockCreate.mockImplementation(() =>
-                Promise.resolve({
-                    choices: [{ message: { content: '["some description1"]' } }]
-                })
-            );
-            mockImageGenerate.mockImplementation(() =>
-                Promise.resolve({
-                    data: [{ url: "some url." }]
-                })
-            );
+            mockChatResponse('["some description1"]');
+            mockImageResponse("some url.");
 
             const expectedMenu = {
                 backgroundImage: "some url.",
@@ -69,11 +77,8 @@ describe('generateMenu', () => {
 
     describe('WHEN calling generate recipe with 3 recipes and LLM only response with 1 description.', () => {
         test('THEN an error is thrown', async () => {
-            mockCreate.mockImplementation(() =>
-                Promise.resolve({
-                    choices: [{ message: { content: '["some description1"]' } }]
-                })
-            );
+            mockChatResponse('["some description1"]');
+
             await expect(() => menuService.generateMenu(recipes)).rejects.toThrow(
                 'LLM did not respond with appropriate number of recipe descriptions.'
             );
@@ -84,18 +89,8 @@ describe('generateMenu', () => {
 
     describe('WHEN calling generate recipe with 3 recipes and LLM responds with 3 descriptions.', () => {
         test('THEN an error is thrown', async () => {
-            mockCreate.mockImplementation(() =>
-                Promise.resolve({
-                    choices: [
-                        {
-                            message: {
-                                content:
-                                    '["some description1", "some description2", "some description3"]'
-                            }
-                        }
-                    ]
-                })
-            );
+            mockChatResponse('["some description1", "some description2", "some description3"]');
+
             const expectedMenu = {
                 backgroundImage: "some url.",
                 courses: [
@@ -115,23 +110,8 @@ describe('generateMenu', () => {
 
     describe('WHEN the recipe input is empty', () => {
         test('THEN an empty menu is returned', async () => {
-            mockCreate.mockImplementation(() =>
-                Promise.resolve({
-                    choices: [
-                        {
-                            message: {
-                                content: '[]'
-                            }
-                        }
-                    ]
-                })
-            );
-
-            mockImageGenerate.mockImplementation(() =>
-                Promise.resolve({
-                    data: [{ url: "" }]
-                })
-            );
+            mockChatResponse('[]');
+            mockImageResponse("");
 
             const menu = await menuService.generateMenu([]);
 
@@ -146,17 +126,7 @@ describe('generateMenu', () => {
 
     describe('WHEN the LLM responds with malformed JSON', () => {
         test('THEN an LLM_RESPONSE_PARSE_ERROR is thrown', async () => {
-            mockCreate.mockImplementation(() =>
-                Promise.resolve({
-                    choices: [
-                        {
-                            message: {
-                                content: 'Not a JSON string'
-                            }
-                        }
-                    ]
-                })
-            );
+            mockChatResponse('Not a JSON string');
 
             await expect(menuService.generateMenu(recipes)).rejects.toThrow(
                 'Content does not contain a valid JSON array. Content received: "Not a JSON string"'
@@ -169,17 +139,7 @@ describe('generateMenu', () => {
 
     describe('WHEN the LLM responds with array that is not valid JSON', () => {
         test('THEN an LLM_RESPONSE_PARSE_ERROR is thrown', async () => {
-            mockCreate.mockImplementation(() =>
-                Promise.resolve({
-                    choices: [
-                        {
-                            message: {
-                                content: '[this is not json]'
-                            }
-                        }
-                    ]
-                })
-            );
+            mockChatResponse('[this is not json]');
 
             await expect(menuService.generateMenu(recipes)).rejects.toThrow(
                 'Failed to parse LLM Response as JSON. Content received: "[this is not json]"'
@@ -226,13 +186,7 @@ describe('generateMenu', () => {
 
     describe('WHEN the Image Generation API request fails', () => {
         test('THEN an is thrown', async () => {
-            mockCreate.mockImplementation(() => Promise.resolve({
-                choices: [
-                    {
-                        message: {}
-                    }
-                ]
-            }));
+            mockChatResponse('[]');
             mockImageGenerate.mockImplementation(() => Promise.reject(new Error('API Error')));
 
             await expect(menuService.generateMenu(recipes)).rejects.toThrow(
