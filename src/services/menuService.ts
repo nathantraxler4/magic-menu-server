@@ -231,7 +231,7 @@ async function _generateDescriptions(recipes: RecipeInput[] | PineconeMetaData[]
     return completion;
 }
 
-async function _generateBackgroundImage(recipes: RecipeInput[]| PineconeMetaData[]) {
+async function _generateBackgroundImage(recipes: RecipeInput[] | PineconeMetaData[]) {
     logger.info('Requesting Text-To-Image model to generate background image...');
     let image;
 

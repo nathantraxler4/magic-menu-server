@@ -14,6 +14,9 @@ jest.mock('../../src/setup/openai', () => {
                 completions: {
                     create: jest.fn(() => Promise.resolve())
                 }
+            },
+            images: {
+                generate: jest.fn(() => Promise.resolve())
             }
         }
     };
@@ -31,6 +34,7 @@ jest.mock('../../src/models/menu', () => {
 
 const mockCreate = openai.chat.completions.create as jest.Mock;
 const mockInsertMany = MenuModel.insertMany as jest.Mock;
+const mockImageGenerate = openai.images.generate as jest.Mock;
 
 describe('generateMenu', () => {
     beforeEach(() => {
@@ -44,8 +48,14 @@ describe('generateMenu', () => {
                     choices: [{ message: { content: '["some description1"]' } }]
                 })
             );
+            mockImageGenerate.mockImplementation(() =>
+                Promise.resolve({
+                    data: [{ url: "some url." }]
+                })
+            );
+
             const expectedMenu = {
-                backgroundImage: 1,
+                backgroundImage: "some url.",
                 courses: [{ description: 'some description1', name: 'name1' }]
             };
 
@@ -87,7 +97,7 @@ describe('generateMenu', () => {
                 })
             );
             const expectedMenu = {
-                backgroundImage: 1,
+                backgroundImage: "some url.",
                 courses: [
                     { description: 'some description1', name: 'name1' },
                     { description: 'some description2', name: 'name2' },
@@ -117,11 +127,17 @@ describe('generateMenu', () => {
                 })
             );
 
+            mockImageGenerate.mockImplementation(() =>
+                Promise.resolve({
+                    data: [{ url: "" }]
+                })
+            );
+
             const menu = await menuService.generateMenu([]);
 
             expect(menu).toMatchObject({
                 courses: [],
-                backgroundImage: 1
+                backgroundImage: ""
             });
 
             expect(mockCreate).toHaveBeenCalled();
@@ -201,6 +217,26 @@ describe('generateMenu', () => {
 
             await expect(menuService.generateMenu(recipes)).rejects.toThrow(
                 'An error occurred requesting LLM API. Error: Error: API Error'
+            );
+
+            expect(mockCreate).toHaveBeenCalled();
+            expect(mockInsertMany).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('WHEN the Image Generation API request fails', () => {
+        test('THEN an is thrown', async () => {
+            mockCreate.mockImplementation(() => Promise.resolve({
+                choices: [
+                    {
+                        message: {}
+                    }
+                ]
+            }));
+            mockImageGenerate.mockImplementation(() => Promise.reject(new Error('API Error')));
+
+            await expect(menuService.generateMenu(recipes)).rejects.toThrow(
+                'An error occurred requesting Text-to-Image API.'
             );
 
             expect(mockCreate).toHaveBeenCalled();
