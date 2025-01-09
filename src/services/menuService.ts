@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import type { Nullable, PineconeMetaData } from '../types';
 
-import { Menu, RecipeInput } from '../__generated__/types';
+import { Menu, Recipe, RecipeInput } from '../__generated__/types';
 import openai from '../setup/openai';
 import { Errors, logAndThrowError } from '../utils/errors';
 import MenuModel from '../models/menu';
@@ -36,12 +36,25 @@ export async function getMenus() {
 export async function generateMenuFromPrompt(prompt: string) /*: Promise<Menu>*/ {
     logger.info('Generating menu from prompt.', { prompt });
     const index: Index = pc.index<PineconeMetaData>(INDEX_NAME, INDEX_HOST);
-    const vector = await getEmbedding(prompt);
+    const recipesCompletion = await _generatePotentialRecipes(prompt);
+    const generatedRecipes = _extractJsonArrayFromCompletion(recipesCompletion);
+    logger.info('Generated recipes completion.', { recipesCompletion });
+    const promises = [];
+    for (const recipe of generatedRecipes) {
+        promises.push(fetchMostSimilarRecipesFromPinecone(index, recipe));
+    }
+    const recipes = await Promise.all(promises);
+    const menu = generateMenu(recipes.flat());
+    return menu;
+}
+
+async function fetchMostSimilarRecipesFromPinecone(index: Index, recipe: string | Recipe) {
+    if (typeof recipe == 'object') recipe = JSON.stringify(recipe);
+    const vector = await getEmbedding(recipe);
     const queryResponse = await queryPinecone(index, vector);
     validateQueryResponse(queryResponse);
-    const recipes: PineconeMetaData[] = queryResponse.matches.map((m) => m.metadata!) as PineconeMetaData[];;
-    const menu = generateMenu(recipes);
-    return menu;
+    const recipes: PineconeMetaData[] = queryResponse.matches.map((m) => m.metadata!) as PineconeMetaData[];
+    return recipes;
 }
 
 function validateQueryResponse(queryResponse: QueryResponse) {
@@ -58,7 +71,7 @@ function validateQueryResponse(queryResponse: QueryResponse) {
 async function queryPinecone(index: Index, vector: number[]): Promise<QueryResponse> {
     try {
         const queryResponse: QueryResponse = await index.query({
-            topK: 3,
+            topK: 1,
             vector: vector,
             includeValues: false,
             includeMetadata: true
@@ -102,11 +115,11 @@ async function getEmbedding(prompt: string): Promise<number[]> {
  */
 export async function generateMenu(recipes: RecipeInput[] | PineconeMetaData[]): Promise<Menu> {
     logger.info('Generating menu from recipes.', { recipes });
-    const [completion, image] = await Promise.all([
+    const [completion, imageResponse] = await Promise.all([
         _generateDescriptions(recipes),
         _generateBackgroundImage(recipes)
     ]);
-    const imageUrl = image.data[0].url || ''; // TO DO: Add more robust error handling
+    const imageUrl = imageResponse.data[0].url || ''; // TO DO: Add more robust error handling
     const descriptions = _extractJsonArrayFromCompletion(completion);
     const names = recipes.map((r) => r.name);
     const menu = _constructMenu(names, descriptions, imageUrl);
@@ -120,7 +133,7 @@ function _extractJsonArrayFromCompletion(
             _request_id?: Nullable<string>;
         }
     >
-): string[] {
+) {
     // Check for valid content
     if (!completion?.choices?.[0]?.message?.content) {
         logAndThrowError({
@@ -232,6 +245,12 @@ async function _generateDescriptions(recipes: RecipeInput[] | PineconeMetaData[]
 }
 
 async function _generateBackgroundImage(recipes: RecipeInput[] | PineconeMetaData[]) {
+    
+    if (process.env.MOCK_IMAGE_GENERATION) {
+        logger.info('Mocking Text-To-Image response withoug calling model...');
+        return { data: [{url: "This is a fake URL." }] };
+    }
+
     logger.info('Requesting Text-To-Image model to generate background image...');
     let image;
 
@@ -255,3 +274,39 @@ async function _generateBackgroundImage(recipes: RecipeInput[] | PineconeMetaDat
 
     return image;
 }
+
+async function _generatePotentialRecipes(prompt: string) {
+    logger.info('Requesting LLM to generate recipes...');
+    let completion;
+    try {
+        completion = await openai.chat.completions.create({
+            model: process.env.GENERATE_RECIPE_MODEL ?? 'gpt-4o',
+            messages: [
+                {
+                    role: 'system',
+                    content: `
+                        You are a recipe generator. Always respond with a valid JSON array of recipe objects, and nothing else. Each recipe object must have exactly three string fields:
+                            "name"
+                            "ingredients"
+                            "instructions"
+                        No other keys or text should be present. Do not include any commentary, explanations, or additional formatting outside of the JSON array.
+                    `
+                },
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ]
+        });
+    } catch (error) {
+        logAndThrowError({
+            message: 'An error occurred requesting LLM API.',
+            error,
+            code: Errors.LLM_API_ERROR
+        });
+    }
+    return completion;
+}
+
+
+// "The center should be mostly plain and take up about 90% of the image to ensure legibility of overlaying text. "
