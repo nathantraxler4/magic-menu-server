@@ -115,9 +115,11 @@ async function getEmbedding(prompt: string): Promise<number[]> {
  */
 export async function generateMenu(recipes: RecipeInput[] | PineconeMetaData[]): Promise<Menu> {
     logger.info('Generating menu from recipes.', { recipes });
+    const imageGenPromptCompletion = await _generateImageGenPrompt(recipes);
+    const imageGenPrompt = _getContentFromCompletion(imageGenPromptCompletion);
     const [completion, imageResponse] = await Promise.all([
         _generateDescriptions(recipes),
-        _generateBackgroundImage(recipes)
+        _generateBackgroundImage(imageGenPrompt)
     ]);
     const imageUrl = imageResponse.data[0].url || ''; // TO DO: Add more robust error handling
     const descriptions = _extractJsonArrayFromCompletion(completion);
@@ -127,14 +129,13 @@ export async function generateMenu(recipes: RecipeInput[] | PineconeMetaData[]):
     return menu;
 }
 
-function _extractJsonArrayFromCompletion(
+function _getContentFromCompletion(
     completion: Nullable<
         OpenAI.Chat.Completions.ChatCompletion & {
             _request_id?: Nullable<string>;
         }
     >
 ) {
-    // Check for valid content
     if (!completion?.choices?.[0]?.message?.content) {
         logAndThrowError({
             message: 'LLM response has no content.',
@@ -143,7 +144,18 @@ function _extractJsonArrayFromCompletion(
     }
 
     const content = completion.choices[0].message.content;
+    return content;
 
+}
+
+function _extractJsonArrayFromCompletion(
+    completion: Nullable<
+        OpenAI.Chat.Completions.ChatCompletion & {
+            _request_id?: Nullable<string>;
+        }
+    >
+) {
+    const content = _getContentFromCompletion(completion);
     // Locate JSON array indices
     const jsonStartIndex = content.indexOf('[');
     const jsonEndIndex = content.indexOf(']');
@@ -212,28 +224,80 @@ export async function insertMenus(menus: Menu[]) {
     logger.info('Menus succesfully inserted!');
 }
 
+async function _generateImageGenPrompt(recipes: RecipeInput[] | PineconeMetaData[]) {
+    logger.info('Requesting LLM to generate descriptions...');
+    const completion = await invokeCompletionAPI({
+        model: process.env.GENERATE_RECIPE_MODEL ?? 'gpt-4o',
+        messages: [
+            {
+                role: 'system',
+                content: `
+                    You will be presented a list of recipes for the user. You are tasked with generating a prompt to be used with an image generation model. 
+                    The image will be used as a background for displaying a menu. The center should be mostly plain and 
+                    take up about 90% of the image to ensure legibility of overlaying text. Ensure the image matches the mood 
+                    set by this cuisine in this menu.
+                `
+            },
+            {
+                role: 'user',
+                content: JSON.stringify(recipes)
+            }
+        ]
+    });
+    return completion;
+}
+
 async function _generateDescriptions(recipes: RecipeInput[] | PineconeMetaData[]) {
     logger.info('Requesting LLM to generate descriptions...');
+    const completion = await invokeCompletionAPI({
+        model: process.env.GENERATE_RECIPE_MODEL ?? 'gpt-4o',
+        messages: [
+            {
+                role: 'system',
+                content: `
+                    You are a master chef preparing a meal for your friends. 
+                    Pick out the 5 most important ingredients of each recipe presented to you formatted as a comma separated string. 
+                    Please order the ingredients by their importance to the dish starting with most important. 
+                    Please use a JSON Array to hold a list of the generated strings.  
+                `
+            },
+            {
+                role: 'user',
+                content: JSON.stringify(recipes)
+            }
+        ]
+    });
+    return completion;
+}
+
+async function _generatePotentialRecipes(prompt: string) {
+    logger.info('Requesting LLM to generate recipes...');
+    const completion = await invokeCompletionAPI({
+        model: process.env.GENERATE_RECIPE_MODEL ?? 'gpt-4o',
+        messages: [
+            {
+                role: 'system',
+                content: `
+                    You are a recipe generator. Always respond with a valid JSON array of recipe objects, and nothing else. Each recipe object must have exactly three string fields:
+                        "name"
+                        "ingredients"
+                        "instructions"
+                    No other keys or text should be present. Do not include any commentary, explanations, or additional formatting outside of the JSON array.
+                `
+            },
+            {
+                role: 'user',
+                content: prompt
+            }
+        ]
+    });
+    return completion;
+}
+
+async function invokeCompletionAPI(config: OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming) {
     let completion;
     try {
-        completion = await openai.chat.completions.create({
-            model: process.env.GENERATE_RECIPE_MODEL ?? 'gpt-4o',
-            messages: [
-                {
-                    role: 'system',
-                    content: `
-                        You are a master chef preparing a meal for your friends. 
-                        Pick out the 5 most important ingredients of each recipe presented to you formatted as a comma separated string. 
-                        Please order the ingredients by their importance to the dish starting with most important. 
-                        Please use a JSON Array to hold a list of the generated strings.  
-                    `
-                },
-                {
-                    role: 'user',
-                    content: JSON.stringify(recipes)
-                }
-            ]
-        });
+        completion = await openai.chat.completions.create(config);
     } catch (error) {
         logAndThrowError({
             message: 'An error occurred requesting LLM API.',
@@ -244,7 +308,7 @@ async function _generateDescriptions(recipes: RecipeInput[] | PineconeMetaData[]
     return completion;
 }
 
-async function _generateBackgroundImage(recipes: RecipeInput[] | PineconeMetaData[]) {
+async function _generateBackgroundImage(prompt: string) {
     
     if (process.env.MOCK_IMAGE_GENERATION) {
         logger.info('Mocking Text-To-Image response withoug calling model...');
@@ -257,8 +321,7 @@ async function _generateBackgroundImage(recipes: RecipeInput[] | PineconeMetaDat
     try {
         image = await openai.images.generate({
             model: 'dall-e-3',
-            prompt: `
-                Please generate me an image that does not contain words for a dinner menu that includes the following courses: ${JSON.stringify(recipes)}`,
+            prompt: prompt,
             n: 1,
             size: '1024x1792',
             quality: 'hd',
@@ -274,39 +337,3 @@ async function _generateBackgroundImage(recipes: RecipeInput[] | PineconeMetaDat
 
     return image;
 }
-
-async function _generatePotentialRecipes(prompt: string) {
-    logger.info('Requesting LLM to generate recipes...');
-    let completion;
-    try {
-        completion = await openai.chat.completions.create({
-            model: process.env.GENERATE_RECIPE_MODEL ?? 'gpt-4o',
-            messages: [
-                {
-                    role: 'system',
-                    content: `
-                        You are a recipe generator. Always respond with a valid JSON array of recipe objects, and nothing else. Each recipe object must have exactly three string fields:
-                            "name"
-                            "ingredients"
-                            "instructions"
-                        No other keys or text should be present. Do not include any commentary, explanations, or additional formatting outside of the JSON array.
-                    `
-                },
-                {
-                    role: 'user',
-                    content: prompt
-                }
-            ]
-        });
-    } catch (error) {
-        logAndThrowError({
-            message: 'An error occurred requesting LLM API.',
-            error,
-            code: Errors.LLM_API_ERROR
-        });
-    }
-    return completion;
-}
-
-
-// "The center should be mostly plain and take up about 90% of the image to ensure legibility of overlaying text. "
